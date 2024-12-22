@@ -1,3 +1,7 @@
 streamlit
 requests
 lxml
+selenium
+webdriver-manager
+libtorrent
+streamlit-webrtc
