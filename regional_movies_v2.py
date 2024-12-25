@@ -127,12 +127,12 @@ if "streamlink" not in st.session_state:
     st.session_state.streamlink= None
 
 # Streamlit app
-st.title("Streaks Movies - Stream or Download Movies")
+st.title("Streaks Movies - Direct Stream or Download Movies V2")
 
 
 # Step 1: Text Input & Search Button
 if st.session_state.step == 1:
-    query = st.text_input("Enter a movie title")
+    query = st.text_input("Enter a movie title", placeholder="Seach your fav regional movies")
     if st.button("Search"):
         st.session_state.dictionary = movie_search(query)
         if st.session_state.dictionary:

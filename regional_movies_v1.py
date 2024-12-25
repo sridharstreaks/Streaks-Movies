@@ -78,16 +78,13 @@ def get_streamlink(dicto):
         last=last+"?dl=1"
     return last
 
-st.set_page_config(
-    page_title="Streaks Movies - Your New Movie Experience",
-    layout="centered",  # Page layout option
-)
-
 # Streamlit app
-st.title("Streaks Movies - Stream or Download Movies")
+st.title("Streaks Movies - Direct Stream or Download Movies V1")
 
 # Text input for user
-input_text = st.text_input("Enter your text below:", placeholder="Type here and press Enter...")
+input_text = st.text_input("Enter movie name:", placeholder="Seach your fav regional movies")
+
+st.warning("you won't have control over movie quality in this version and if this doesn't wor, Try V2!")
 
 if st.button('Search'):
     # Trigger first function
