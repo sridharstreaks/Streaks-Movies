@@ -15,21 +15,20 @@ if "torrent_session" not in st.session_state:
     st.session_state.torrent_handle = None
 
 # Function: get_domian
-def domain_finder(previous_domain='.ru'):
-    base_url="https://www.1tamilmv"
-    response = requests.get(base_url+previous_domain)
+def domain_finder():
+    base_url="https://hacker9.com/tamilmv-proxy-list-of-1tamilmv-proxy-sites/"
+    response = requests.get(base_url)
     if response.status_code==200:
         tree = html.fromstring(response.content)
-        current_domain=tree.xpath('//*[contains(text(),".") and @class]/text()')[0]
-    current_url=base_url+current_domain
-    return current_url  #redirection pending
+        current_domain=tree.xpath('//table//td[@class="site"]//a/@href')[0]
+    return current_domain  #redirection pending
 
 # Function: movie_search
 def movie_search(query,previous_domain='.ru'):
     dicto={}
     discard_words=['gdrive','Trailer','songs','drive']
     query=query.replace(" ","%20").lower()
-    url=f"{domain_finder(previous_domain)}/index.php?/search/&q={query}&quick=1&search_and_or=and&search_in=titles&sortby=relevancy"
+    url=f"{domain_finder()}/index.php?/search/&q={query}&quick=1&search_and_or=and&search_in=titles&sortby=relevancy"
     response = requests.get(url)
     if response.status_code==200:
         tree = html.fromstring(response.content)
