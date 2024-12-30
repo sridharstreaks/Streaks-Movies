@@ -128,6 +128,7 @@ if "streamlink" not in st.session_state:
 
 # Streamlit app
 st.title("Streaks Movies - Direct Stream or Download Movies V2")
+st.caption("Movies in this version is available in 480p only.")
 
 
 # Step 1: Text Input & Search Button

@@ -1,9 +1,14 @@
+import streamlit as st
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time  # To allow time for JavaScript to execute
+import requests
+import json
 import requests
 from lxml import html
-import time
-import random
-import streamlit as st
-import re
 
 payload = {
 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 13_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15',
@@ -13,102 +18,196 @@ payload = {
 'Referer': 'https://www.google.com/'
 }
 
-def strip_domain_pattern(movie_url):
-    pattern = r"(?<=url\?q=)(https[^&]+)(?=&)"
-    match = re.search(pattern, movie_url)
-    return match.group(1)
+############################################### Functions used to fetch inital links ####################################################
 
-def get_domian(search_keyword,as_sitesearch=None):
-    dicto={}
-    if as_sitesearch is None:
-        url=f'https://www.google.com/search?q={search_keyword.replace(" ", "+")}'
-        response = requests.get(url, headers= payload)
-        if response.status_code==200:
-            tree = html.fromstring(response.content)
-            domain_name=str(tree.xpath('//div[@class="yuRUbf"]//a[@href and not(@disabled)]/@href')[0]).replace("https://", "").replace("/", "")
-        return domain_name
-    else:
-        url=f'https://www.google.com/search?q={search_keyword.replace(" ", "+").lower()}&as_sitesearch={as_sitesearch}'
-        response = requests.get(url)
-        if response.status_code==200:
-            # Save the response as an HTML file
-            tree = html.fromstring(response.content)
-            try:
-                movie_url=str(tree.xpath(f'//a[contains(@href,{search_keyword.replace(" ","-").lower()}) and contains(@href,"movies") and contains(@href,"movie-download") and not(contains(@href,"google"))]/@href')[0])
-                if "url?q" in movie_url:
-                    movie_url=strip_domain_pattern(movie_url)
-                else:
-                    pass
-            except IndexError:
-                movie_url=str(tree.xpath('//a[contains(@href,"movie/page") and contains(@href,"movies") and not(contains(@href,"google"))]/@href')[0])
-                if "url?q" in movie_url:
-                    movie_url=strip_domain_pattern(movie_url)
-                else:
-                    pass
-            print(movie_url)
-            dicto[search_keyword]=movie_url
-        return dicto
-
-def download_link_fetcher(dicto):
-    while not any(".dl" in value or ".mp4" in value for value in dicto.values()):
-        print(".mp4 not found. Continuing the loop.")
-        if len(dicto) > 0:
-            *_, last = dicto.values()
-        print(last)
-        response = requests.get(last)
+def get_request(url): #to get html request for a website
+    response = requests.get(url)
+    if response.status_code==200:
         tree = html.fromstring(response.content)
-        if tree.xpath('count(//div[@class="f"])') > 0 and tree.xpath('count(//div[@class="bf"]//div[@class="f"])') == 0:
-            try:
-                dicto[tree.xpath('//div[@class="f"]//a//font[not(contains(text(),"Sample"))]/text()')[0]] = "https://3moviesda.com"+tree.xpath('//div[@class="f"]//a//font[not(contains(text(),"Sample"))]//parent::a/@href')[0]
-            except IndexError:
-                dicto[tree.xpath('//div[@class="f"]//a[not(contains(text(),"Sample"))]/text()')[0]] = "https://3moviesda.com"+tree.xpath('//div[@class="f"]//a[not(contains(text(),"Sample"))]//parent::a/@href')[0]
-        elif tree.xpath('count(//div[@class="dlink"]//a[not(contains(@rel,"norefferrer"))])') > 0:
-            dicto[tree.xpath('//div[@class="dlink"]//a/text()')[0]] = tree.xpath('//div[@class="dlink"]//a/text()//parent::a/@href')[0]
-        elif tree.xpath('count(//div[@class="dlink"]//a[contains(@rel,"norefferrer")])') > 0:
-            dicto[tree.xpath('//div[@class="dlink"]//a/text()')[0]] = tree.xpath('//div[@class="dlink"]//a/text()//parent::a/@href')[0]
-        else:
-            print("Movie Not Found")
-            break
-        time.sleep(random.randint(0,5))
-    return dicto
+        return tree
 
-def get_streamlink(dicto):
-    *_, last = dicto.values()
-    if ".dl" in last:
-        last=last+"?dl=1"
-    return last
+def domain_finder(domain_keyword):
+     # get the working website ignoring the faulty ones
+    url=f'https://www.google.com/search?q={domain_keyword.replace(" ", "+")}'
+    response = requests.get(url,headers=payload)
+    tree = html.fromstring(response.content)
+    links= tree.xpath('//h3/parent::a/@href')
+    for each in links:
+        try:
+            tree=get_request(each)
+            if tree.xpath('//form') != []:
+                break
+            return each
+        except:
+            continue
+
+def movie_search(query):
+    url=domain_finder("isaimini")
+    #print(url)
+    try:
+        tree=get_request(url)
+    except:
+        print('error')
+    dicto={}
+    search_url=url+f"mobile/search?find={query}&per_page=1"
+    tree=get_request(search_url)
+    for i in range(0,int(tree.xpath(f'count(//div[@class="dir"]//a[contains(@href,{url})]/text())'))):
+        #print(int(tree.xpath(f'count(//div[@class="dir"]//a[contains(@href,"https://www.isaimini.business.in/")]/text())')))
+        dicto[tree.xpath(f'//div[@class="dir"]//a[contains(@href,{url})]/text()')[i]]=tree.xpath(f'//div[@class="dir"]//a[contains(@href,{url})]/@href')[i]
+    return dicto,url
+
+def movie_quality(url,link):
+    dicto={}
+    tree=get_request(link)
+    for i in range(0,int(tree.xpath(f'count(//div[@class="catList"]//a[contains(@href,{url})])'))):
+        #print(int(tree.xpath(f'count(//div[@class="dir"]//a[contains(@href,"https://www.isaimini.business.in/")]/text())')))
+        dicto[tree.xpath(f'//div[@class="catList"]//a[contains(@href,{url})]/text()')[i*2]]=tree.xpath(f'//div[@class="catList"]//a[contains(@href,{url})]/@href')[i]
+    return dicto,url
+
+def get_movie_link(url,link):
+    tree = get_request(url)
+    links = tree.xpath(f'//a[@class="dwnLink" and contains(@href, {url})]/@href')
+    if not links:  # If no links are found, return None or an appropriate value
+        return link
+    
+    while links:
+        next_url = links[0]
+        return get_movie_link(next_url)  # Pass the first URL to the recursive function
+    
+    return next_url,url
+
+######################################## End of Initial Links Extraction ##########################################################
+
+######################################### Stream Link Extraction #######################################################
+
+def get_website_content(url): #uses selenium to mimic a click
+    driver = None
+    try:
+        # Set up Selenium WebDriver
+        chrome_options = Options()
+        chrome_options.add_argument('--headless')  # Run in headless mode (optional)
+        chrome_options.add_argument('--disable-gpu')  # Disable GPU for headless mode
+        chrome_options.add_argument('--window-size=1920,1200') # Set Chrome window Size
+        chrome_options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()),options=chrome_options)
+        # For local Development                          
+        #service = Service('C:\\ChromeDriver_Path')  # Replace with your ChromeDriver path
+        #driver = webdriver.Chrome(service=service, options=chrome_options)
+        #st.write(f"DEBUG:DRIVER:{driver}")
+        driver.get(url)
+        time.sleep(5)
+        html_doc = driver.page_source
+        download_button = driver.find_element(By.XPATH, "//a[@class='dwnLink']")  # Adjust XPath to match your case
+        download_button.click()
+        logs = driver.get_log("performance")
+        driver.quit()
+        return logs
+    except Exception as e:
+        print(f"DEBUG:INIT_DRIVER:ERROR:{e}")
+    finally:
+            if driver is not None: driver.quit()
+    return None
+
+
+def process_browser_logs_for_network_events(logs): #process and fetch only relevant log file
+    for entry in logs:
+        log = json.loads(entry["message"])["message"]
+        if log.get('method') == 'Network.responseReceived' and log.get('params', {}).get('response', {}).get('mimeType') == 'video/mp4':
+            #st.write(type(log)) for debugging
+            return log
+        
+#extract the streamlink from logs
+def extract_url(log):
+    # Safely navigate the nested dictionary to get the 'url' value
+    return log.get('params', {}).get('response', {}).get('url', None)
+
+######################################### Stream Link Extraction Ends #######################################################
+# Initialize session state variables
+if "step" not in st.session_state:
+    st.session_state.step = 1
+if "url" not in st.session_state:
+    st.session_state.url = None
+if "dictionary" not in st.session_state:
+    st.session_state.dictionary = None
+if "selected_option_1" not in st.session_state:
+    st.session_state.selected_option_1 = None
+if "selected_option_2" not in st.session_state:
+    st.session_state.selected_option_2 = None
+if "streamlink" not in st.session_state:
+    st.session_state.streamlink= None
 
 # Streamlit app
 st.title("Streaks Movies - Direct Stream or Download Movies V1")
 
-# Text input for user
-input_text = st.text_input("Enter movie name:", placeholder="Seach your fav regional movies")
 
-st.warning("you won't have control over movie quality in this version and if this doesn't wor, Try V2!")
+# Step 1: Text Input & Search Button
+if st.session_state.step == 1:
+    query = st.text_input("Enter a movie title", placeholder="Seach your fav regional movies")
+    if st.button("Search"):
+        st.session_state.dictionary,st.session_state.url = movie_search(query)
+        if st.session_state.dictionary and st.session_state.url:
+            st.session_state.step = 2
+            st.rerun()
+        else:
+            st.write("No results found")
 
-if st.button('Search'):
-    # Trigger first function
-    get_domian_result = get_domian(input_text,"3moviesda.com")
+# Step 2: Present Options Based on Search
+elif st.session_state.step == 2 and st.session_state.dictionary and st.session_state.url:
+    selected_option_1 = st.pills("Select an Movie option:", list(st.session_state.dictionary.keys()))
+    if st.button("Confirm Movie"):
+        st.session_state.selected_option_1 = st.session_state.dictionary[selected_option_1]
+        st.session_state.step = 3
+        st.rerun()
+    elif st.button("Start Over"):
+        for key in ['step', 'search_result', 'first_selection', 'second_result', 'final_selection']:
+            st.session_state[key] = None
+        st.session_state.step = 1
+        st.rerun()
 
-    with st.spinner('Fetching Stream Link'):
-        # Trigger second function with the result of the first
-        download_link_fetcher_result = download_link_fetcher(get_domian_result)
-        st.success('Download link fetched', icon="✅")
+# Step 3: Further Operations Based on Selection
+elif st.session_state.step == 3 and st.session_state.selected_option_1:
+    st.session_state.dictionary,st.session_state.url = movie_quality(st.session_state.url,st.session_state.selected_option_1)
+    selected_option_2 = st.pills("Select an Movie option:", list(st.session_state.dictionary.keys()))
+    if st.button("Confirm Movie Quality"):
+        st.session_state.selected_option_2 = st.session_state.dictionary[selected_option_2]
+        st.session_state.step = 4
+        st.rerun()
+    elif st.button("Start Over"):
+        for key in ['step', 'search_result', 'first_selection', 'second_result', 'final_selection']:
+            st.session_state[key] = None
+        st.session_state.step = 1
+        st.rerun()
 
-    # Final streaming link extractor
-    video_path = get_streamlink(download_link_fetcher_result)
-
-    if ".mp4" or "?dl=1" in video_path:
-        # Display the video if the file exists
-        try:
-            st.video(video_path)
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
+elif st.session_state.step == 4 and st.session_state.selected_option_2:
+    if "streamlink" not in st.session_state or st.session_state.streamlink is None:
+        with st.spinner("Fetching Streaming Link"):
+            final_link,st.session_state.url = get_movie_link(st.session_state.url,st.session_state.selected_option_2)
     
-    time.sleep(5)
+            logs = get_website_content(final_link)
+    
+            log = process_browser_logs_for_network_events(logs)
+    
+            st.session_state.streamlink = extract_url(log)
+            st.success('stream link fetched', icon="✅")
+    # Show the Play button only after the link is fetched  
+    if st.session_state.streamlink:
+        if st.button("Play"):
+            st.session_state.step = 5
+            st.rerun()
+    elif st.button("Start Over"):
+        for key in ['step', 'search_result', 'first_selection', 'second_result', 'final_selection']:
+            st.session_state[key] = None
+        st.session_state.step = 1
+        st.rerun()
 
-    st.markdown("High loading times? Directly download the file instead using the link below")
-    time.sleep(2)
-    st.markdown(":rainbow[Click here to Download!!!]")
-    time.sleep(1)
-    st.link_button("Direct Download",video_path,type="primary",icon="⬇️")
+elif st.session_state.step == 5:
+    st.video(st.session_state.streamlink)
+    time.sleep(5)
+    st.link_button("Save to Device",st.session_state.streamlink,type="primary")
+
+    #Start Over button
+    if st.button("**Wanna watch/download another Movie?**",icon="🚨"):
+        for key in ['step', 'dictionary', 'selected_option_1', 'selected_option_2', 'streamlink']:
+            st.session_state[key] = None
+        st.session_state.step = 1
+        st.rerun()
