@@ -33,12 +33,10 @@ def domain_finder(domain_keyword):
     tree = html.fromstring(response.content)
     links= tree.xpath('//h3/parent::a/@href')
     for each in links:
-        try:
-            tree=get_request(each)
-            if tree.xpath('//form') != []:
-                break
+        tree=get_request(each)
+        if tree.xpath('//form') != []:
             return each
-        except:
+        else:
             continue
 
 def movie_search(query):
@@ -136,6 +134,7 @@ if "streamlink" not in st.session_state:
 
 # Streamlit app
 st.title("Streaks Movies - Direct Stream or Download Movies V1")
+st.caption("Movies in this version is available in 480p and 720p.")
 
 
 # Step 1: Text Input & Search Button
@@ -199,7 +198,7 @@ elif st.session_state.step == 4 and st.session_state.selected_option_2:
         st.rerun()
 
 elif st.session_state.step == 5:
-    st.video(st.session_state.streamlink)
+    st.video(st.session_state.streamlink,autoplay=True)
     time.sleep(5)
     st.link_button("Save to Device",st.session_state.streamlink,type="primary")
 
