@@ -44,37 +44,35 @@ def domain_finder(domain_keyword):
 def movie_search(query):
     url=domain_finder("isaimini")
     #print(url)
-    try:
-        tree=get_request(url)
-    except:
-        print('error')
     dicto={}
     search_url=url+f"mobile/search?find={query}&per_page=1"
     tree=get_request(search_url)
-    for i in range(0,int(tree.xpath(f'count(//div[@class="dir"]//a[contains(@href,{url})]/text())'))):
+    for i in range(0,int(tree.xpath('count(//div[@class="dir"]//a[contains(@href,{})]/text())'.format(url.replace("https://","").replace("/",""))))):
         #print(int(tree.xpath(f'count(//div[@class="dir"]//a[contains(@href,"https://www.isaimini.business.in/")]/text())')))
-        dicto[tree.xpath(f'//div[@class="dir"]//a[contains(@href,{url})]/text()')[i]]=tree.xpath(f'//div[@class="dir"]//a[contains(@href,{url})]/@href')[i]
+        dicto[tree.xpath('//div[@class="dir"]//a[contains(@href,{})]/text()'.format(url.replace("https://","").replace("/","")))[i]]=tree.xpath('//div[@class="dir"]//a[contains(@href,{})]/@href'.format(url.replace("https://","").replace("/","")))[i+1]
     return dicto,url
 
 def movie_quality(url,link):
     dicto={}
     tree=get_request(link)
-    for i in range(0,int(tree.xpath(f'count(//div[@class="catList"]//a[contains(@href,{url})])'))):
+    for i in range(0,int(tree.xpath('count(//div[@class="catList"]//a[contains(@href,{})])'.format(url.replace("https://","").replace("/",""))))):
         #print(int(tree.xpath(f'count(//div[@class="dir"]//a[contains(@href,"https://www.isaimini.business.in/")]/text())')))
-        dicto[tree.xpath(f'//div[@class="catList"]//a[contains(@href,{url})]/text()')[i*2]]=tree.xpath(f'//div[@class="catList"]//a[contains(@href,{url})]/@href')[i]
+        dicto[tree.xpath('//div[@class="catList"]//a[contains(@href,{})]/text()'.format(url.replace("https://","").replace("/","")))[i*2]]=tree.xpath('//div[@class="catList"]//a[contains(@href,{})]/@href'.format(url.replace("https://","").replace("/","")))[i]
     return dicto,url
 
-def get_movie_link(url,link):
-    tree = get_request(url)
-    links = tree.xpath(f'//a[@class="dwnLink" and contains(@href, {url})]/@href')
-    if not links:  # If no links are found, return None or an appropriate value
-        return link
-    
-    while links:
-        next_url = links[0]
-        return get_movie_link(next_url)  # Pass the first URL to the recursive function
-    
-    return next_url,url
+#    def get_movie_link(url,link):
+#        base_url=url
+#        tree = html.fromstring(get_website_content(link))
+#        links = tree.xpath('//a[@class="dwnLink" and contains(@href, {})]/@href'.format(url.replace("https://","").replace("/","")))
+#        print(links)
+#        if not links:  # If no links are found, return None or an appropriate value
+#            return link, base_url
+#        
+#        while links:
+#            next_url = links[0]
+#            return get_movie_link(base_url,next_url)  # Pass the first URL to the recursive function
+#        
+#        return next_url,url
 
 ######################################## End of Initial Links Extraction ##########################################################
 
@@ -181,9 +179,9 @@ elif st.session_state.step == 3 and st.session_state.selected_option_1:
 elif st.session_state.step == 4 and st.session_state.selected_option_2:
     if "streamlink" not in st.session_state or st.session_state.streamlink is None:
         with st.spinner("Fetching Streaming Link"):
-            final_link,st.session_state.url = get_movie_link(st.session_state.url,st.session_state.selected_option_2)
+            #final_link,st.session_state.url = get_movie_link(st.session_state.url,st.session_state.selected_option_2)
     
-            logs = get_website_content(final_link)
+            logs = get_website_content(st.session_state.selected_option_2.replace("file","view"))
     
             log = process_browser_logs_for_network_events(logs)
     
