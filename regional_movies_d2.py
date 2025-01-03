@@ -127,7 +127,7 @@ if "streamlink" not in st.session_state:
     st.session_state.streamlink= None
 
 # Streamlit app
-st.title("Streaks Movies - Direct Stream or Download Movies V2")
+st.title("Streaks Movies - Direct Stream or Download Movies Domain 2")
 st.caption("Movies in this version is available in 480p only.")
 
 
@@ -192,7 +192,7 @@ elif st.session_state.step == 4 and st.session_state.selected_option_2:
         st.rerun()
 
 elif st.session_state.step == 5:
-    st.video(st.session_state.streamlink)
+    st.video(st.session_state.streamlink,autoplay=True)
     time.sleep(5)
     st.link_button("Save to Device",st.session_state.streamlink,type="primary")
 
