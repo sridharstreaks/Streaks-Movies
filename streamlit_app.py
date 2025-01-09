@@ -48,13 +48,13 @@ if st.session_state.step == 1:
         for each in direct_domain_keywords:
             #fetch resuts for isaimini
             if each == 'isaimini':
-                result_dict, url = isaimini.movie_search(st.session_state.query)
+                results, url = isaimini.movie_search(st.session_state.query)
                 if st.session_state.dictionary is None:
                     st.session_state.dictionary = {}
-                if result_dict:
+                if results:
                     # Add a prefix to all keys to avoid overwriting
-                    result_dict = {f"server_1_{k}": v for k, v in result_dict.items()}
-                    st.session_state.dictionary.update(result_dict)
+                    results = {f"server_1_{k}": v for k, v in results.items()}
+                    st.session_state.dictionary.update(results)
                     st.session_state.url = url  # Update URL if applicable
             #fetch resuts for moviesda
             elif each == 'moviesda':
@@ -119,7 +119,7 @@ if st.session_state.step == 1:
                     # Add a prefix to all keys to avoid overwriting
                     results = {f"torrent_server_2_{k}": v for k, v in results.items()}
                     st.session_state.dictionary.update(results)
-        if st.session_state.dictionary and st.session_state.url:
+        if st.session_state.dictionary:
             st.session_state.step = 6
             st.rerun()
         else:

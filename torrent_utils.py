@@ -72,7 +72,7 @@ class Torrent_utils:
 
             if not buffer_ready:
                 if downloaded_bytes < buffer_threshold:
-                    buffer_placeholder.warning(f"Buffering... Please wait for {round((downloaded_bytes/buffer_threshold)*100,2)}% more data to download.")
+                    buffer_placeholder.warning(f"Buffering... Please wait for {100 - round((downloaded_bytes/buffer_threshold)*100,2)}% more data to download.")
                 else:
                     buffer_placeholder.empty()
                     buffer_ready = True

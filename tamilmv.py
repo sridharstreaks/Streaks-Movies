@@ -50,7 +50,7 @@ class Tamilmv():
             url=Tamilmv.remove_extra_url(current_url) #ensure always returns the home page of the url.
 
         dicto = {}
-        search_url = url + f"index.php?/search/&q={query.replace(' ', '+')}&quick=1&search_and_or=or&search_in=titles&sortby=relevancy"
+        search_url = url + f"index.php?/search/&q=\"{query.replace(' ', '%20')}\"&quick=1&updated_after=any&sortby=relevancy&search_in=titles"
         tree = web_utils.get_request(search_url)
         if tree is None:
             print("Error getting the webpage")
