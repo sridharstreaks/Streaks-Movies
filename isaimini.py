@@ -6,8 +6,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from web_utils import web_utils
+from mongodb import MongoDBHandler
+import streamlit as st
+
 
 web_utils=web_utils()
+# Initialize the MongoDB handler
+db_handler = MongoDBHandler(st.secrets["connection_uri"])
 
 class Isaimini():
 
@@ -33,28 +38,44 @@ class Isaimini():
         return result
     
     def movie_search(self, query):
-        url = web_utils.domain_finder("isaimini")
-        if Isaimini.count_forward_slashes(url)>3:
-            url=Isaimini.remove_extra_url(url)
+        db_handler.connect_and_test() #makes connection with mongodb
+
+        current_url = db_handler.get_current_url("isaimini") #gets the current url
+
+        current_url=web_utils.get_url(current_url) #checks if current url is working
+
+        url=db_handler.update_url_if_needed("isaimini",current_url) #captures any changes in the url domain
+
+        if Isaimini.count_forward_slashes(current_url)>3:
+            url=Isaimini.remove_extra_url(current_url) #ensure always returns the home page of the url.
+
         dicto = {}
-        search_url = url + f"mobile/search?find={query}&per_page=1"
+        search_url = url + f"mobile/search?find={query.replace(' ', '+')}&per_page=1"
         tree = web_utils.get_request(search_url)
         if tree is None:
+            print("Error getting the webpage")
             return dicto, url
-        for i in range(0, int(tree.xpath('count(//div[@class="dir"]//a[contains(@href,{})]/text())'.format(url.replace("https://", "").replace("/", ""))))):
-            dicto[tree.xpath('//div[@class="dir"]//a[contains(@href,{})]/text()'.format(url.replace("https://", "").replace("/", "")))[i]] = tree.xpath('//div[@class="dir"]//a[contains(@href,{})]/@href'.format(url.replace("https://", "").replace("/", "")))[i+1]
+        try:
+            for i in range(0, int(tree.xpath('count(//div[@class="dir"]//a[contains(@href,{})]/text())'.format(url.replace("https://", "").replace("/", ""))))):
+                dicto[tree.xpath('//div[@class="dir"]//a[contains(@href,{})]/text()'.format(url.replace("https://", "").replace("/", "")))[i]] = tree.xpath('//div[@class="dir"]//a[contains(@href,{})]/@href'.format(url.replace("https://", "").replace("/", "")))[i+1]
+        except Exception as e:
+            print(f"Error while Extracting the elements/ No proper Page formed: {e}")
         return dicto, url
 
-    def movie_quality(self, url, link):
+    def movie_quality(self, url, selected_movie_link):
         dicto = {}
-        tree = web_utils.get_request(link)
+        tree = web_utils.get_request(selected_movie_link)
         if tree is None:
+            print("Error getting the webpage")
             return dicto, url
-        for i in range(0, int(tree.xpath('count(//div[@class="catList"]//a[contains(@href,{})])'.format(url.replace("https://", "").replace("/", ""))))):
-            dicto[tree.xpath('//div[@class="catList"]//a[contains(@href,{})]/text()'.format(url.replace("https://", "").replace("/", "")))[i * 2]] = tree.xpath('//div[@class="catList"]//a[contains(@href,{})]/@href'.format(url.replace("https://", "").replace("/", "")))[i]
+        try:
+            for i in range(0, int(tree.xpath('count(//div[@class="catList"]//a[contains(@href,{})])'.format(url.replace("https://", "").replace("/", ""))))):
+                dicto[tree.xpath('//div[@class="catList"]//a[contains(@href,{})]/text()'.format(url.replace("https://", "").replace("/", "")))[i * 2]] = tree.xpath('//div[@class="catList"]//a[contains(@href,{})]/@href'.format(url.replace("https://", "").replace("/", "")))[i]
+        except Exception as e:
+            print(f"Error while Extracting the elements/ No proper Page formed: {e}")
         return dicto, url
 
-    def get_website_content(self, url):
+    def get_website_logs(self, url):
         driver = None
         try:
             chrome_options = Options()
@@ -65,7 +86,7 @@ class Isaimini():
             driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
             driver.get(url.replace("file","view"))
             time.sleep(5)
-            html_doc = driver.page_source
+            #html_doc = driver.page_source
             download_button = driver.find_element(By.XPATH, "//a[@class='dwnLink']")
             download_button.click()
             logs = driver.get_log("performance")
@@ -87,7 +108,7 @@ class Isaimini():
         else:
             return log
 
-    def extract_url(self, log):
+    def extract_url_from_network_events(self, log):
         if log is not None: 
             return log.get('params', {}).get('response', {}).get('url', None)
         else:

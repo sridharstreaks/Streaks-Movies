@@ -4,14 +4,18 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from webdriver_manager.chrome import ChromeDriverManager
 import time
-import json
-from lxml import html
 import re
 from web_utils import web_utils
+from mongodb import MongoDBHandler
+import streamlit as st
+
 
 web_utils=web_utils()
+# Initialize the MongoDB handler
+db_handler = MongoDBHandler(st.secrets["connection_uri"])
 
 class Tamilyogi():
+
     @staticmethod
     def count_forward_slashes(url):
         return url.count('/')
@@ -33,14 +37,28 @@ class Tamilyogi():
         return result
     
     def movie_search(self,query):
-        url = web_utils.domain_finder("1tamilyogi")
-        if Tamilyogi.count_forward_slashes(url)>3:
-            url=Tamilyogi.remove_extra_url(url)
+        db_handler.connect_and_test() #makes connection with mongodb
+
+        current_url = db_handler.get_current_url("tamilyogi") #gets the current url
+
+        current_url=web_utils.get_url(current_url) #checks if current url is working
+
+        url=db_handler.update_url_if_needed("tamilyogi",current_url) #captures any changes in the url domain
+
+        if Tamilyogi.count_forward_slashes(current_url)>3:
+            url=Tamilyogi.remove_extra_url(current_url) #ensure always returns the home page of the url.
+
         dicto = {}
         search_url = url + f"?s={query}"
         tree = web_utils.get_request(search_url)
-        for i in range(0, int(tree.xpath('count(//ul[@class="recent-posts"]//li)'))):
-            dicto[tree.xpath('//ul[@class="recent-posts"]//li//h2//a/text()')[i]] = tree.xpath('//ul[@class="recent-posts"]//li//h2//a/@href')[i]
+        if tree is None:
+            print("Error getting the webpage")
+            return dicto
+        try:
+            for i in range(0, int(tree.xpath('count(//ul[@class="recent-posts"]//li)'))):
+                dicto[tree.xpath('//ul[@class="recent-posts"]//li//h2//a/text()')[i]] = tree.xpath('//ul[@class="recent-posts"]//li//h2//a/@href')[i]
+        except Exception as e:
+            print(f"Error while Extracting the elements/ No proper Page formed: {e}")
         return dicto
 
     @staticmethod
@@ -57,8 +75,14 @@ class Tamilyogi():
         dicto = {}
         # Save the response as an HTML file
         tree = web_utils.get_request(selected_movie_link)
-        for i in range(0, int(tree.xpath("count(//div[@class='entry-content']//span//a)"))):
-            dicto[Tamilyogi.quality_name_regex(tree.xpath("//div[@class='entry-content']//span//a/@href")[i])] = tree.xpath("//div[@class='entry-content']//span//a/@href")[i]
+        if tree is None:
+            print("Error getting the webpage")
+            return dicto
+        try:
+            for i in range(0, int(tree.xpath("count(//div[@class='entry-content']//span//a)"))):
+                dicto[Tamilyogi.quality_name_regex(tree.xpath("//div[@class='entry-content']//span//a/@href")[i])] = tree.xpath("//div[@class='entry-content']//span//a/@href")[i]
+        except Exception as e:
+            print(f"Error while Extracting the elements/ No proper Page formed: {e}")
         return dicto
     
     @staticmethod
@@ -70,13 +94,13 @@ class Tamilyogi():
             else:
                 continue
     
-    def stream_link_fetcher(self,url):
+    def get_website_content(self,url):
         check=Tamilyogi.find_quality(url)
         driver = None
         try:
             # Set up Selenium WebDriver
             chrome_options = Options()
-            #chrome_options.add_argument('--headless')  # Run in headless mode (optional)
+            chrome_options.add_argument('--headless')  # Run in headless mode (optional)
             chrome_options.add_argument('--disable-gpu')  # Disable GPU for headless mode
             chrome_options.add_argument('--window-size=1920,1200')  # Set Chrome window Size
             chrome_options.set_capability('goog:loggingPrefs', {'performance': 'ALL'})
@@ -86,13 +110,13 @@ class Tamilyogi():
             # driver = webdriver.Chrome(service=service, options=chrome_options)
             driver.get(url)
             time.sleep(5)
-            html_doc = driver.page_source
+            #html_doc = driver.page_source
             if driver.find_elements(By.XPATH, '//span[contains(text(),"Download")]//a'):
                 # Find all <a> tags whose href contains "droplare"
                 element = driver.find_element(By.XPATH, f'//span[contains(text(),"Download")]//a[contains(@href,{check})]')
                 element.click()
                 time.sleep(5)
-                html_doc = driver.page_source
+                #html_doc = driver.page_source
                 if driver.find_element(By.XPATH, '//div[@id="dlWrapper"]//a'):
                 # Find all <a> tags whose href contains "droplare"
                     elements = driver.find_elements(By.XPATH, '//div[@id="dlWrapper"]//a')

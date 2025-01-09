@@ -23,6 +23,19 @@ class web_utils:
         except Exception as e:
             print(f"An error occurred while fetching URL: {url}, Error: {e}")
         return None
+    
+    def get_url(self, url):
+        """Fetches the HTML content of a given URL and parses it into an lxml tree."""
+        try:
+            response = requests.get(url)
+            if response.status_code == 200:
+                current_url = response.url
+                return current_url
+            else:
+                print(f"Failed to fetch URL: {url}, Status Code: {response.status_code}")
+        except Exception as e:
+            print(f"An error occurred while fetching URL: {url}, Error: {e}")
+        return None
 
     def domain_finder(self, domain_keyword):
         """Finds a working website based on the domain keyword, ignoring faulty ones."""
