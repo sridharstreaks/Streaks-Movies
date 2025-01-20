@@ -1,0 +1,58 @@
+
+import re
+
+class streams_manager:
+    """
+    A class to manage and create STREAMS data structures for movies and magnet links.
+    """
+
+    @staticmethod
+    def extract_info_hash(magnet_link):
+        """
+        Extract the info hash from a magnet link.
+
+        Args:
+            magnet_link (str): The magnet link containing the info hash.
+
+        Returns:
+            str or None: The info hash if found, otherwise None.
+        """
+        # Regular expression to match the info hash in a magnet link
+        regex = r'btih:([a-fA-F0-9]{40})'
+        match = re.search(regex, magnet_link)
+
+        if match:
+            return match.group(1).lower()  # Return the captured info hash in lowercase
+        return None
+
+    @staticmethod
+    def create_streams(movie_dict, movie_id):
+        """
+        Create a STREAMS dictionary structure from a movie dictionary.
+
+        Args:
+            movie_dict (dict): Dictionary with movie titles as keys and magnet links as values.
+            movie_id (str): Unique identifier for the movie.
+
+        Returns:
+            dict: The STREAMS data structure containing movies and their info hashes.
+        """
+        # Initialize the STREAMS structure with 'movie' as top-level key
+        streams = {
+            'movie': {}
+        }
+
+        # For each movie in the dictionary, extract the infoHash and build the structure
+        for movie, magnet_link in movie_dict.items():
+            info_hash = streams_manager.extract_info_hash(magnet_link)
+            if info_hash:
+                # For each movie ID, add the list of dictionaries with infoHash
+                if movie_id not in streams['movie']:
+                    streams['movie'][movie_id] = []
+                
+                streams['movie'][movie_id].append({
+                    'title': movie,
+                    'infoHash': info_hash
+                })
+
+        return streams

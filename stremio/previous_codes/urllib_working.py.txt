@@ -1,0 +1,151 @@
+from flask import Flask, jsonify, abort, request
+import requests, json
+from lxml import html
+import re
+import httpx
+import urllib3
+import time
+
+app = Flask(__name__)
+
+# Mock Manifest
+MANIFEST = {
+    'id': 'org.stremio.helloworldPython',
+    'version': '1.0.0',
+
+    'name': 'Hello World Python Addon',
+    'description': 'Sample addon made with Flask providing a few public domain movies',
+
+    'types': ['movie', 'series'],
+
+    'catalogs': [],
+
+    'resources': [
+        {'name': 'stream', 'types': [
+            'movie', 'series'], 'idPrefixes': ['tt', 'hpy']}
+    ]
+}
+
+
+# Placeholder for STREAMS dictionary (if needed for caching)
+STREAMS = {}
+
+def get_request(url): #to get html request for a website
+    retries = urllib3.Retry(
+    total=5,                # Total retry attempts
+    backoff_factor=0.5,     # Backoff multiplier for retry delays
+    status_forcelist=[500, 502, 503, 504],  # Retry on these status codes
+    )
+    with urllib3.PoolManager(retries=retries) as http:
+        response = http.request('GET', url)
+        if response.status==200:
+            tree = html.fromstring(response.data)
+            return tree
+
+# Simulated function to fetch infoHash and id for a title
+def movie_title_fetcher(movie_id):
+    http = urllib3.PoolManager()
+    response = http.request('GET', f'https://v2.sg.media-imdb.com/suggestion/h/{movie_id}.json')
+    if response.status==200:
+        movie_data=json.loads(response.data)
+        movie_title=movie_data['d'][0]['l']
+        return movie_title
+    
+def movie_search(title):
+    dicto={}
+    tree=get_request(f'https://www.1tamilmv.re/index.php?/search/&q=\"{title.replace(" ","%20")}\"&type=forums_topic&quick=1&search_and_or=and&search_in=titles&sortby=relevancy')
+    if tree is None:
+            print("Error getting the webpage")
+            return dicto
+    try:
+        for i in range(0,int(tree.xpath('count(//ol//h2[contains(@class,"StreamItem_title")]//a//text())'))):
+            if not any(word.lower() in tree.xpath('//ol//h2[contains(@class,"StreamItem_title")]//a//text()')[i].lower() for word in ['OTT', 'Trailer','Soundtrack','Master Quality','Lyrical','GDRIVE','Ai Upscaled','MUSIC VIDEO','Video Songs','Video Song','YT-DL','Musical','Audio Launch','Teaser']):
+                dicto[tree.xpath('//ol//h2[contains(@class,"StreamItem_title")]//a//text()')[i]]=tree.xpath('//ol//h2[contains(@class,"StreamItem_title")]//a/@href')[i]
+    except Exception as e:
+        print(f"Error while Extracting the elements/ No proper Page formed: {e}")
+    return dicto
+
+def movie_torrents(selected_movie_link):
+        dicto = {}
+        tree = get_request(selected_movie_link)
+        if tree is None:
+            print("Error getting the webpage")
+            return dicto
+        try:
+            for i in range(0,int(tree.xpath('count(//a[@data-fileext="torrent"]//span/text())'))):
+                dicto[tree.xpath('//a[@data-fileext="torrent"]//span/text()')[i]]=tree.xpath('//a[@class="skyblue-button"]/@href')[i]
+        except Exception as e:
+            print(f"Error while Extracting the elements/ No proper Page formed: {e}")
+        return dicto
+
+def extract_info_hash(magnet_link):
+    # Regular expression to match the info hash in a magnet link
+    regex = r'btih:([a-fA-F0-9]{40})'
+    match = re.search(regex, magnet_link)
+    
+    if match:
+        return match.group(1).lower()  # Return the captured info hash
+    else:
+        return None
+
+# Function to create the STREAMS dictionary
+def create_streams(movie_dict, movie_id):
+    # Initialize the STREAMS structure with 'movie' as top-level key
+    streams = {
+        'movie': {}
+    }
+
+    # For each movie in the dictionary, extract the infoHash and build the structure
+    for movie, magnet_link in movie_dict.items():
+        info_hash = extract_info_hash(magnet_link)
+        if info_hash:
+            # For each movie ID, add the list of dictionaries with infoHash
+            if movie_id not in streams['movie']:
+                streams['movie'][movie_id] = []
+            
+            streams['movie'][movie_id].append({
+                'title': movie,
+                'infoHash': info_hash
+            })
+
+    return streams
+
+def tamilmv(title,id):
+    results={}
+    dicto=movie_search(title)
+    for i in range(0,len(list(dicto.keys()))):
+        results.update(movie_torrents(list(dicto.values())[i]))
+    streams=create_streams(results,id)
+    return streams
+
+# Helper function for JSON response
+def respond_with(data):
+    resp = jsonify(data)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    resp.headers['Access-Control-Allow-Headers'] = '*'
+    return resp
+
+@app.route('/manifest.json')
+def addon_manifest():
+    return respond_with(MANIFEST)
+
+@app.route('/stream/<type>/<id>.json')
+def addon_stream(type, id):
+    time.sleep(2)
+    if type not in MANIFEST['types']:
+        abort(404)
+
+    # http = urllib3.PoolManager()
+    # response = http.request('GET', 'https://www.1tamilmv.re/')
+    # print(response.status)
+    # print(response.data.decode('utf-8'))
+
+    title=movie_title_fetcher(id)
+    STREAMS=tamilmv(title,id)
+    streams = {'streams': []}
+    if type in STREAMS and id in STREAMS[type]:
+        streams['streams'] = STREAMS[type][id]
+    return respond_with(streams)
+
+if __name__ == '__main__':
+    app.run(debug=True)

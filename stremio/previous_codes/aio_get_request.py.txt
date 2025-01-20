@@ -1,0 +1,44 @@
+import asyncio
+import aiohttp
+from lxml import html
+
+class web_page_fetcher:
+    """
+    A class to fetch HTML content of a webpage asynchronously.
+    """
+
+    @staticmethod
+    async def fetch_page_html(url):
+        """
+        Fetch the entire HTML content of a page asynchronously.
+
+        Args:
+            url (str): The URL of the webpage to fetch.
+
+        Returns:
+            lxml.html.HtmlElement or str: The HTML content of the page as an lxml tree if successful, 
+            or an error message.
+        """
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        tree = html.fromstring(await response.text())
+                        return tree  # Return the parsed HTML tree
+                    else:
+                        return f"Failed to fetch page content. HTTP status: {response.status}"
+            except Exception as e:
+                return f"An error occurred: {e}"
+
+    @staticmethod
+    def get_request(url):
+        """
+        Wrapper function to run the async function in a synchronous context.
+
+        Args:
+            url (str): The URL of the webpage to fetch.
+
+        Returns:
+            lxml.html.HtmlElement or str: The HTML content of the page or an error message.
+        """
+        return asyncio.run(web_page_fetcher.fetch_page_html(url))

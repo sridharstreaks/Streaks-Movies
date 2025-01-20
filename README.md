@@ -1,4 +1,4 @@
-# 🎬 **Streaks Movies - Movie Streaming and Downloading App** (V3)
+# 🎬 **Streaks Movies - Movie Streaming and Downloading App** (V4)
 
 ## ⚠️ **Disclaimer**
 This application is built **solely for educational purposes**.  
@@ -8,6 +8,7 @@ I **do not own** any of the content displayed or provided within the app. All co
 
 ## 🚀 **App Overview**
 This app allows users to:
+- ***New*** Provided support as an Add-on for popular content streaming app **Stremio**
 - **Search** for regional movies and foreign 🎥  
 - **Stream movies** directly, hassle-free ✅  
 - **Download movies** without ads, redirects, or spam 🔽  
@@ -15,11 +16,12 @@ This app allows users to:
 ### Key Highlights:
 - **No Ads**  
 - **No Misleading Redirects**  
-- **No Spam** or Shady Cookies 🍪  
+- **No Spam or Shady Cookies** 🍪  
 
 ---
 
-## 🛠️ **Current Version V3 features**
+## 🛠️ **Current Version V4 features**
+- Created a **Python Add-on for popular content streaming app *Streamio*. Now stream all your favorite regional movies with the beautiful and seamless app on ur Phone, TV and PC**
 - Created **_Python Classes domains for universal usage_** instead of just functions.
 - Added a **_Mongodb Server for backned_** to keep track of frequent changing doamins.
 - Added **_Support to Regional and Foreign movies_** as well.
@@ -33,6 +35,7 @@ This app allows users to:
 ---
 
 ## 🌟 **What's Next?**
+- Added a new contributer [Yogesh](https://github.com/yogesh82-dotcom/yogesh82-dotcom) who will be responsible for frontend of the addon and creating a public community link for *streamio*. Community link would be up here soon!!!
 - <ins> Use Ai to streamlining the workflow and automation. </ins>
     *Note:* This can be done rightway and easier to impliment as well with less code but the issues right now is the LLM would be fed with the entire HTML page with each costing upto ~5-10k tokens for a single which is huge. All tools like `Scrapegraph`, `Firecrawl`, `Crawl4ai` operates similarly. **I don't have the bandwidth for that much LLM tokens and also scrapping these domains weren't that complicated so As of now sticking to algorithms only. Maybe in future versions i'll incoporate it.
 - Improve the Ui with featured movies, latest movies etc.

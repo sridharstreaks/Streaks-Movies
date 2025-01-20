@@ -1,0 +1,31 @@
+import urllib3
+import json
+
+class imdb_retriver:
+    """
+    A class to fetch movie titles from IMDb's suggestion API.
+    """
+
+    @staticmethod
+    def fetch_movie_title(movie_id):
+        """
+        Fetch the movie title using its IMDb movie ID.
+
+        Args:
+            movie_id (str): The IMDb movie ID.
+
+        Returns:
+            str: The title of the movie if successful, or an error message.
+        """
+        http = urllib3.PoolManager()
+        url = f'https://v2.sg.media-imdb.com/suggestion/h/{movie_id}.json'
+
+        try:
+            response = http.request('GET', url)
+            if response.status == 200:
+                movie_data = json.loads(response.data)
+                return movie_data['d'][0]['l']  # Return the movie title
+            else:
+                return f"Failed to fetch movie title. HTTP status: {response.status}"
+        except Exception as e:
+            return f"An error occurred: {e}"
