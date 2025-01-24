@@ -5,7 +5,7 @@ import './App.css';
 function App() {
 
   const openStremioAddon = () => {
-    const addonManifestUrl = "stremio://stremio-addon-lxib.onrender.com/manifest.json";
+    const addonManifestUrl = "stremio://streaks-movies.onrender.com/manifest.json";
     window.location.href = addonManifestUrl;
   };
   return (
