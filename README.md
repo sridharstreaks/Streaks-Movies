@@ -52,8 +52,8 @@ Feel free to **raise an issue** if you encounter any problems.
 ---
 
 ## 🔗 **App Link**
-[Click here to try the app](https://streaks-movies.streamlit.app/)
-
+-[Click here to try the app](https://streaks-movies.streamlit.app/)
+-[Stremio Addon link](https://streaks-movies-p4fa.onrender.com)
 ---
 
 ### 📢 **Feedback and Contributions**
