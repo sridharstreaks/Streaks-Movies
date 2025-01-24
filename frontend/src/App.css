@@ -1,0 +1,57 @@
+body {
+  background-image: linear-gradient(to right, rgba(0,0,0,0.9), rgba(0,0,0,0.2)),url('./background.jpg'); 
+  background-size: cover; 
+  background-repeat: no-repeat; 
+  background-position: center;
+  background-attachment: fixed; 
+}
+
+.navbar-brand {
+  color: #E50914;
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.navbar-brand:hover{
+  color:  #E50914;
+}
+
+.bebas-neue-regular{
+  font-family: "Bebas Neue", serif;
+  font-weight: 300;
+  letter-spacing: 1px;
+  font-style: normal;
+}
+
+.container-fluid.d-flex.justify-content-start.h-100 {
+  padding-top: 150px;
+}
+
+.text-start {
+  max-width: 600px;
+}
+
+.btn-lg {
+  padding: 15px 30px;
+  font-size: 18px;
+  font-weight: "normal";
+  letter-spacing: 0.1em;
+  background-color: #E50914;
+  border-radius: 3px;
+  color: white;
+}
+
+a {
+  color: #E50914;
+  text-decoration: none;
+}
+
+a:hover{
+  color: #7B5BF5;
+  text-decoration: "none";
+}
+
+.text-start p {
+  font-size: 18px; 
+}
+

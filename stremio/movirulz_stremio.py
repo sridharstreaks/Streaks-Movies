@@ -20,7 +20,7 @@ class Movierulz:
         """
         dicto = {}
         current_domain=web_page_fetcher.current_domain("https://www.5movierulz.rip/")
-        query_url = f'{current_domain}search_movies?s={title.lower().replace(' ', '+')}'
+        query_url = f'{current_domain}search_movies?s={title.lower().replace(" ", "+")}'
         tree = web_page_fetcher.get_request(query_url)
         if tree is None:
             print(f'Error getting the webpage {query_url}')
