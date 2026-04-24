@@ -19,7 +19,7 @@ class Tamilblasters:
             dict: A dictionary with movie titles as keys and their corresponding links as values.
         """
         dicto = {}
-        current_domain=web_page_fetcher.current_domain("https://www.1tamilblasters.net/")
+        current_domain=web_page_fetcher.current_domain("https://www.1tamilblasters.date/")
         query_url = f'{current_domain}index.php?/search/&q=\"{title.replace(' ', '%20')}\"&updated_after=any&sortby=relevancy&search_in=titles'
         tree = web_page_fetcher.get_request(query_url)
         if tree is None:
